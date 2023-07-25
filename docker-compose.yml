@@ -1,0 +1,17 @@
+version: "3.3"
+
+services:
+  mastobot-3d-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${WORKER_PORT}:${WORKER_PORT}"
+    volumes:
+      - .:/app
+    command: ["python3", "main.py"]
+    networks:
+      - mastobot-3d-network
+
+networks:
+  mastobot-3d-network:
