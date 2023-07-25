@@ -18,7 +18,7 @@ class MyBot(MastoBot):
         if report_match:
             before_report = report_match.group(1).strip()
             report_message = report_match.group(2).strip()
-            logging.info(f"Report message received: {report_message}")
+            logging.info(f"⛔ \t Report message received: {report_message}")
 
             # Get account
             api_account = self.getAccount(mention.get("account"))
@@ -36,13 +36,13 @@ class MyBot(MastoBot):
                     report_message=report_message,
                 )
             except Exception as e:
-                logging.critical("Error initializing template")
+                logging.critical("❗ \t Error initializing template")
                 raise e
 
             try:
                 self._api.st(status=output, visibility="direct")
             except Exception as e:
-                logging.critical("Error posting status message")
+                logging.critical("❗ \t Error posting status message")
                 raise e
         else:
             # Perform actions after calling the original function
@@ -51,7 +51,7 @@ class MyBot(MastoBot):
                     self.reblogStatus(mention.get("status"))
                 except Exception as e:
                     logging.warning(
-                        f"Status could not be boosted: {mention.get('status')}"
+                        f"❗ \t Status could not be boosted: {mention.get('status')}"
                     )
                     logging.error(e)
 
@@ -60,11 +60,11 @@ class MyBot(MastoBot):
                     self.favoriteStatus(mention.get("status"))
                 except Exception as e:
                     logging.warning(
-                        f"Status could not be favourited: {mention.get('status')}"
+                        f"❗ \t Status could not be favourited: {mention.get('status')}"
                     )
                     logging.error(e)
 
-        logging.info(f"Mention processed: {mention.get('id')}")
+        logging.info(f"📬 \t Mention processed: {mention.get('id')}")
         self.dismissNotification(mention.get("id"))
 
     @handleMastodonExceptions
@@ -87,17 +87,17 @@ class MyBot(MastoBot):
             template = env.get_template("new_follow.txt")
             output = template.render(account=account)
         except Exception as e:
-            logging.critical("Error initializing template")
+            logging.critical("❗ \t Error initializing template")
             raise e
 
         # Generate the welcoming message from the template
         try:
             self._api.status_post(status=output, visibility="direct")
         except Exception as e:
-            logging.critical("Error posting Status")
+            logging.critical("❗ \t Error posting Status")
             raise e
 
-        logging.info(f"Follow processed: {follow.get('id')}")
+        logging.info(f"📭 \t Follow processed: {follow.get('id')}")
         self.dismissNotification(follow.get("id"))
 
     @handleMastodonExceptions
