@@ -107,6 +107,10 @@ class MyBot(MastoBot):
     @handleMastodonExceptions
     def processFollowRequest(self, follow_request: Dict):
         self.dismissNotification(follow_request.get("id"))
+        
+    @handleMastodonExceptions
+    def processUpdate(self, update: Dict) -> None:
+        self.dismissNotification(update.get("id"))
 
     @handleMastodonExceptions
     def isParentStatus(self, status_id: int) -> bool:
