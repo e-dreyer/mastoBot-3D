@@ -2,6 +2,7 @@ from typing import List, Dict
 from jinja2 import Environment, FileSystemLoader
 import logging
 import re
+import time
 
 from mastoBot.configManager import ConfigAccessor
 from mastoBot.mastoBot import MastoBot, handleMastodonExceptions
@@ -147,9 +148,15 @@ class MyBot(MastoBot):
                 return True
 
 if __name__ == "__main__":
-    config = ConfigAccessor("config.yml")
-    credentials = ConfigAccessor("credentials.yml")
+    
+    while True:
+        try:
+            config = ConfigAccessor("config.yml")
+            credentials = ConfigAccessor("credentials.yml")
 
-    bot = MyBot(credentials=credentials, config=config)
+            bot = MyBot(credentials=credentials, config=config)
 
-    bot.run()
+            bot.run()
+        except:
+            time.sleep(10)
+            
