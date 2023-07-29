@@ -149,14 +149,11 @@ class MyBot(MastoBot):
 
 if __name__ == "__main__":
     
+    config = ConfigAccessor("config.yml")
+    credentials = ConfigAccessor("credentials.yml")
+    bot = MyBot(credentials=credentials, config=config)
+    
     while True:
-        try:
-            config = ConfigAccessor("config.yml")
-            credentials = ConfigAccessor("credentials.yml")
-
-            bot = MyBot(credentials=credentials, config=config)
-
-            bot.run()
-        except:
-            time.sleep(10)
+        bot.run()
+        time.sleep(10)
             
