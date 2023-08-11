@@ -1,0 +1,11 @@
+👋 Hey there, @{{ account }} ! 🤗 Thanks for your post 🚀✨
+
+⚠️ We can however not boost it as it does not contain alt-text for all media attachments.
+
+We have decided as a community to implement this feature to make the community more exclusive for weak-sighted, blind or disabled users.
+
+Please consider to reposting with alt-text included on all of your media files, providing a descriptive message to help such users.
+
+Please refer to our pinned post 📌 regarding our community rules:
+
+🔗 https://techhub.social/@3dprinting/110765359683055848

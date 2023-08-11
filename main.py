@@ -1,68 +1,71 @@
 from typing import List, Dict
-from jinja2 import Environment, FileSystemLoader
 import logging
 import re
 import time
-
+import asyncio
 from mastoBot.configManager import ConfigAccessor
 from mastoBot.mastoBot import MastoBot, handleMastodonExceptions
+
 
 class MyBot(MastoBot):
     @handleMastodonExceptions
     def processMention(self, mention: Dict):
-        # Get the content from the mention
-        content = self.getStatus(mention.get("status")).get("content")
+        api_status = self.getStatus(mention.get("status"))
+        api_account = self.getAccount(mention.get("account"))
+        content = api_status.get("content")
 
         # Check for report tag
         report_pattern = r"(.*?)(?<!\S)\$report\b\s*(.*)</p>"
         report_match = re.search(report_pattern, content)
+
+        # If report message
         if report_match:
             before_report = report_match.group(1).strip()
             report_message = report_match.group(2).strip()
             logging.info(f"⛔ \t Report message received: {report_message}")
 
-            # Get account
-            api_account = self.getAccount(mention.get("account"))
-            api_status = self.getStatus(mention.get("status"))
+            template_data = {
+                "creator": api_account.get("acct"),
+                "reported_post_id": mention.get("status"),
+                "reported_post_url": api_status.get("url"),
+                "report_message": report_message,
+            }
 
             try:
-                file_loader = FileSystemLoader("templates")
-                env = Environment(loader=file_loader)
-                template = env.get_template("report.txt")
-
-                output = template.render(
-                    creator=api_account.get("acct"),
-                    reported_post_id=mention.get("status"),
-                    reported_post_url=api_status.get("url"),
-                    report_message=report_message,
-                )
-            except Exception as e:
-                logging.critical("❗ \t Error initializing template")
-                raise e
-
-            try:
-                self._api.st(status=output, visibility="direct")
+                output = self.getTemplate("report.txt", template_data)
+                self._api.status_post(status=output, visibility="direct")
             except Exception as e:
                 logging.critical("❗ \t Error posting status message")
                 raise e
         else:
-            # Perform actions after calling the original function
-            if self.shouldReblog(mention.get("status")):
+            # Check boost and favourite configs
+            shouldReblog = self.shouldReblog(mention.get("status"))
+            shouldFavourite = self.shouldFavorite(mention.get("status"))
+            altTextTestPassed = self.altTextTestPassed(mention.get("status"), "boosts")
+
+            # Check boost
+            if shouldReblog:
                 try:
                     self.reblogStatus(mention.get("status"))
                 except Exception as e:
-                    logging.warning(
-                        f"❗ \t Status could not be boosted: {mention.get('status')}"
-                    )
+                    logging.warning(f"❗ \t Status could not be boosted")
                     logging.error(e)
+            elif not altTextTestPassed:
+                template_data = {"account": api_account.get("acct")}
 
-            if self.shouldFavorite(mention.get("status")):
+                try:
+                    output = self.getTemplate("missing_alt_text.txt", template_data)
+                    self._api.status_post(status=output, visibility="direct")
+                except Exception as e:
+                    logging.critical("❗ \t Error sending missing-alt-text message")
+                    raise e
+
+            # Check favourite
+            if shouldFavourite:
                 try:
                     self.favoriteStatus(mention.get("status"))
                 except Exception as e:
-                    logging.warning(
-                        f"❗ \t Status could not be favourited: {mention.get('status')}"
-                    )
+                    logging.warning(f"❗ \t Status could not be favourited")
                     logging.error(e)
 
         logging.info(f"📬 \t Mention processed: {mention.get('id')}")
@@ -82,17 +85,11 @@ class MyBot(MastoBot):
         api_account = self.getAccount(follow.get("account"))
         account = api_account.get("acct")
 
-        try:
-            file_loader = FileSystemLoader("templates")
-            env = Environment(loader=file_loader)
-            template = env.get_template("new_follow.txt")
-            output = template.render(account=account)
-        except Exception as e:
-            logging.critical("❗ \t Error initializing template")
-            raise e
+        template_data = {"account": account}
 
         # Generate the welcoming message from the template
         try:
+            output = self.getTemplate("new_follow.txt", template_data)
             self._api.status_post(status=output, visibility="direct")
         except Exception as e:
             logging.critical("❗ \t Error posting Status")
@@ -108,52 +105,30 @@ class MyBot(MastoBot):
     @handleMastodonExceptions
     def processFollowRequest(self, follow_request: Dict):
         self.dismissNotification(follow_request.get("id"))
-        
+
     @handleMastodonExceptions
     def processUpdate(self, update: Dict) -> None:
         self.dismissNotification(update.get("id"))
 
-    @handleMastodonExceptions
-    def shouldReblog(self, status_id: int) -> bool:
-        isParentStatus = self.isParentStatus(status_id)
-        isByFollower = self.isByFollower(status_id)
-        boostConfig = self.config.get("boosts")
-
-        if isParentStatus and boostConfig.get("parents"):
-            if boostConfig.get("followers_only"):
-                return isByFollower
-            else:
-                return True
-        elif not isParentStatus and boostConfig.get("children"):
-            if boostConfig.get("followers_only"):
-                return isByFollower
-            else:
-                return True
-
-    @handleMastodonExceptions
-    def shouldFavorite(self, status_id: int) -> bool:
-        isParentStatus = self.isParentStatus(status_id)
-        isByFollower = self.isByFollower(status_id)
-        favoriteConfig = self.config.get("favorites")
-
-        if isParentStatus and favoriteConfig.get("parents"):
-            if favoriteConfig.get("followers_only"):
-                return isByFollower
-            else:
-                return True
-        elif not isParentStatus and favoriteConfig.get("children"):
-            if favoriteConfig.get("followers_only"):
-                return isByFollower
-            else:
-                return True
-
 if __name__ == "__main__":
-    
     config = ConfigAccessor("config.yml")
     credentials = ConfigAccessor("credentials.yml")
     bot = MyBot(credentials=credentials, config=config)
     
+    async def bot_loop():
+        await bot.run()
+        
+    async def timer():
+        while True:
+            logging.info('tick')
+            await asyncio.sleep(5)
+        
+    async def main():
+        await asyncio.gather(bot_loop(), timer())
+
     while True:
-        bot.run()
-        time.sleep(10)
-            
+        try:
+            asyncio.run(main())
+        except:
+            time.sleep(10)
+            pass
