@@ -6,13 +6,14 @@ import asyncio
 from mastoBot.configManager import ConfigAccessor
 from mastoBot.mastoBot import MastoBot, handleMastodonExceptions
 
+from mastoBot.mastoBot import AccountDict, StatusDict
 
 class MyBot(MastoBot):
     @handleMastodonExceptions
     def processMention(self, mention: Dict):
-        api_status = self.getStatus(mention.get("status"))
-        api_account = self.getAccount(mention.get("account"))
-        content = api_status.get("content")
+        api_status: StatusDict = self.getStatus(mention.get("status"))
+        api_account: AccountDict = self.getAccount(mention.get("account"))
+        content: str = api_status.get("content")
 
         # Check for report tag
         report_pattern = r"(.*?)(?<!\S)\$report\b\s*(.*)</p>"
@@ -39,9 +40,9 @@ class MyBot(MastoBot):
                 raise e
         else:
             # Check boost and favourite configs
-            shouldReblog = self.shouldReblog(mention.get("status"))
-            shouldFavourite = self.shouldFavorite(mention.get("status"))
-            altTextTestPassed = self.altTextTestPassed(mention.get("status"), "boosts")
+            shouldReblog: bool = self.shouldReblog(mention.get("status"))
+            shouldFavourite: bool = self.shouldFavorite(mention.get("status"))
+            altTextTestPassed: bool = self.altTextTestPassed(mention.get("status"), "boosts")
 
             # Check boost
             if shouldReblog:
@@ -82,7 +83,7 @@ class MyBot(MastoBot):
     @handleMastodonExceptions
     def processFollow(self, follow: Dict):
         # Get latest account from the Mastodon API
-        api_account = self.getAccount(follow.get("account"))
+        api_account: AccountDict = self.getAccount(follow.get("account"))
         account = api_account.get("acct")
 
         template_data = {"account": account}
