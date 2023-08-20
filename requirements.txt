@@ -16,7 +16,7 @@ greenlet==2.0.2
 idna==3.4
 Jinja2==3.1.2
 MarkupSafe==2.1.3
-MastoBot.py @ git+https://github.com/e-dreyer/MastoBot/@40443aa566fcf233ac1d03349c825be07ca20cca
+MastoBot.py @ git+https://github.com/e-dreyer/MastoBot/@5285d726e8e1e109bcdaf8d039a08218da0b5490
 Mastodon.py==1.8.1
 mypy-extensions==1.0.0
 packaging==23.1
