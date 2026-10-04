@@ -12,3 +12,4 @@ credentials.yml
 *.log
 *.sqlite
 *.db
+uv.lock

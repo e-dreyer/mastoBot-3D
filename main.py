@@ -1,18 +1,21 @@
-from typing import List, Dict
+import asyncio
 import logging
 import re
 import time
-import asyncio
-from mastoBot.configManager import ConfigAccessor
-from mastoBot.mastoBot import MastoBot, handleMastodonExceptions
 
-from mastoBot.mastoBot import AccountDict, StatusDict
+from mastoBot.configManager import ConfigAccessor
+
+from mastoBot.mastoBot import (
+    MastoBot,
+    handleMastodonExceptions,
+)
+
 
 class MyBot(MastoBot):
     @handleMastodonExceptions
-    def processMention(self, mention: Dict):
-        api_status: StatusDict = self.getStatus(mention.get("status"))
-        api_account: AccountDict = self.getAccount(mention.get("account"))
+    def processMention(self, mention: dict):
+        api_status: dict = self.getStatus(mention.get("status"))
+        api_account: dict = self.getAccount(mention.get("account"))
         content: str = api_status.get("content")
 
         # Check for report tag
@@ -42,14 +45,16 @@ class MyBot(MastoBot):
             # Check boost and favourite configs
             shouldReblog: bool = self.shouldReblog(mention.get("status"))
             shouldFavourite: bool = self.shouldFavorite(mention.get("status"))
-            altTextTestPassed: bool = self.altTextTestPassed(mention.get("status"), "boosts")
+            altTextTestPassed: bool = self.altTextTestPassed(
+                mention.get("status"), "boosts"
+            )
 
             # Check boost
             if shouldReblog:
                 try:
                     self.reblogStatus(mention.get("status"))
                 except Exception as e:
-                    logging.warning(f"❗ \t Status could not be boosted")
+                    logging.warning("❗ \t Status could not be boosted")
                     logging.error(e)
             elif not altTextTestPassed:
                 template_data = {"account": api_account.get("acct")}
@@ -66,24 +71,24 @@ class MyBot(MastoBot):
                 try:
                     self.favoriteStatus(mention.get("status"))
                 except Exception as e:
-                    logging.warning(f"❗ \t Status could not be favourited")
+                    logging.warning("❗ \t Status could not be favourited")
                     logging.error(e)
 
         logging.info(f"📬 \t Mention processed: {mention.get('id')}")
         self.dismissNotification(mention.get("id"))
 
     @handleMastodonExceptions
-    def processReblog(self, reblog: Dict):
+    def processReblog(self, reblog: dict):
         self.dismissNotification(reblog.get("id"))
 
     @handleMastodonExceptions
-    def processFavourite(self, favourite: Dict):
+    def processFavourite(self, favourite: dict):
         self.dismissNotification(favourite.get("id"))
 
     @handleMastodonExceptions
-    def processFollow(self, follow: Dict):
+    def processFollow(self, follow: dict):
         # Get latest account from the Mastodon API
-        api_account: AccountDict = self.getAccount(follow.get("account"))
+        api_account: dict = self.getAccount(follow.get("account"))
         account = api_account.get("acct")
 
         template_data = {"account": account}
@@ -100,30 +105,31 @@ class MyBot(MastoBot):
         self.dismissNotification(follow.get("id"))
 
     @handleMastodonExceptions
-    def processPoll(self, poll: Dict):
+    def processPoll(self, poll: dict):
         self.dismissNotification(poll.get("id"))
 
     @handleMastodonExceptions
-    def processFollowRequest(self, follow_request: Dict):
+    def processFollowRequest(self, follow_request: dict):
         self.dismissNotification(follow_request.get("id"))
 
     @handleMastodonExceptions
-    def processUpdate(self, update: Dict) -> None:
+    def processUpdate(self, update: dict) -> None:
         self.dismissNotification(update.get("id"))
+
 
 if __name__ == "__main__":
     config = ConfigAccessor("config.yml")
     credentials = ConfigAccessor("credentials.yml")
     bot = MyBot(credentials=credentials, config=config)
-    
+
     async def bot_loop():
         await bot.run()
-        
+
     async def timer():
         while True:
-            logging.info('tick')
+            logging.info("tick")
             await asyncio.sleep(5)
-        
+
     async def main():
         await asyncio.gather(bot_loop(), timer())
 
@@ -132,4 +138,3 @@ if __name__ == "__main__":
             asyncio.run(main())
         except:
             time.sleep(10)
-            pass

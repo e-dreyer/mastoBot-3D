@@ -1,0 +1,14 @@
+[project]
+name = "mastobot-3d"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "MastoBot.py",
+    "beautifulsoup4",
+    "redis>=8.1.0",
+]
+
+[tool.uv.sources]
+"MastoBot.py" = { path = "../mastoBot" }

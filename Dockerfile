@@ -1,25 +1,33 @@
-# syntax=docker/dockerfile:1
+# Use the official Python 3.12 slim image
+FROM python:3.12-slim
 
-# Use the official Python base image
-FROM python:3.10-slim
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Set the working directory in the container
 WORKDIR /app
 
-# Updates and default installs
-RUN apt update && apt-get update && pip install --upgrade pip && apt-get install -y git
+# Install system dependencies
+RUN apt-get update && \
+	apt-get install -y --no-install-recommends git && \
+	rm -rf /var/lib/apt/lists/*
 
-# Copy the requirements file and .env file to the container
-COPY requirements.txt .
+# Copy mastoBot first so uv can find it when resolving local path dependency
+COPY mastoBot /mastoBot
 
-# Install the required libraries
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy pyproject.toml and uv.lock first (for better layer caching)
+COPY mastoBot-3D/pyproject.toml mastoBot-3D/uv.lock ./
 
-COPY . ./
+# Install Python dependencies using uv
+RUN uv sync --frozen --no-dev
 
-# Setup python path
-ENV PYTHONUNBUFFERED 1
+# Copy the rest of the application
+COPY mastoBot-3D/ .
+
+# Environment variables
+ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
+ENV PATH="/app/.venv/bin:$PATH"
 
-# Set the entry point for the container
-CMD ["python3", "main.py"]
+# Set the entry point
+CMD ["uv", "run", "main.py"]
